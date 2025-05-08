@@ -12,18 +12,18 @@
             background: #2c3e50;
             color: white;
         }
+        .nav-link.active {
+            background: rgb(255, 0, 0);
+        }
+    </style>
+</head>
+<body>
+        }
         .nav-link {
             color: rgba(255,255,255,.8);
         }
         .nav-link:hover {
             color: white;
-        }
-        .nav-link.active {
-            background: rgba(255,255,255,.1);
-        }
-    </style>
-</head>
-<body>
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->

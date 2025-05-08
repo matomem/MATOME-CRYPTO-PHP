@@ -11,18 +11,25 @@ class LunoService
     private $apiKey;
     private $apiSecret;
     private $baseUrl = 'https://api.luno.com/api/1';
+    private $isProduction;
 
     public function __construct()
     {
+        $this->isProduction = getenv('APP_ENV') === 'production';
         $this->apiKey = getenv('LUNO_KEY');
         $this->apiSecret = getenv('LUNO_SECRET');
+        
+        if (empty($this->apiKey) || empty($this->apiSecret)) {
+            throw new \Exception('Luno API credentials are not configured');
+        }
         
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
             'timeout' => 30,
             'headers' => [
                 'User-Agent' => 'MatomeCrypto/1.0'
-            ]
+            ],
+            'verify' => $this->isProduction // Enable SSL verification in production
         ]);
     }
 
@@ -271,7 +278,7 @@ class LunoService
     }
 
     /**
-     * Private request method with authentication
+     * Private request method with authentication and error handling
      */
     private function request($method, $endpoint, $params = [])
     {
@@ -289,9 +296,16 @@ class LunoService
                 'query' => $params
             ]);
 
-            return json_decode($response->getBody(), true);
+            $result = json_decode($response->getBody(), true);
+            
+            if (isset($result['error'])) {
+                throw new \Exception('Luno API Error: ' . $result['error']);
+            }
+
+            return $result;
         } catch (GuzzleException $e) {
-            throw new \Exception('Luno API Error: ' . $e->getMessage());
+            error_log('Luno API Request Error: ' . $e->getMessage());
+            throw new \Exception('Failed to communicate with Luno API. Please try again later.');
         }
     }
 
@@ -304,15 +318,169 @@ class LunoService
         return array_column($markets['markets'], 'name');
     }
 
+    /**
+     * Enhanced Balance Methods
+     */
+    public function getDetailedBalance()
+    {
+        try {
+            $balance = $this->request('GET', '/balance');
+            $detailedBalance = [];
+            
+            foreach ($balance['balance'] as $asset) {
+                $detailedBalance[$asset['asset']] = [
+                    'balance' => $asset['balance'],
+                    'reserved' => $asset['reserved'],
+                    'unconfirmed' => $asset['unconfirmed'],
+                    'available' => $asset['balance'] - $asset['reserved']
+                ];
+            }
+            
+            return $detailedBalance;
+        } catch (\Exception $e) {
+            error_log('Balance Error: ' . $e->getMessage());
+            throw new \Exception('Failed to retrieve balance information');
+        }
+    }
+
     public function getAssetBalance($asset)
     {
-        $balance = $this->getBalance();
-        foreach ($balance['balance'] as $item) {
-            if ($item['asset'] === $asset) {
-                return $item;
-            }
+        try {
+            $balance = $this->getDetailedBalance();
+            return $balance[$asset] ?? null;
+        } catch (\Exception $e) {
+            error_log('Asset Balance Error: ' . $e->getMessage());
+            throw new \Exception('Failed to retrieve asset balance');
         }
-        return null;
+    }
+
+    /**
+     * Enhanced Transaction Methods
+     */
+    public function getTransactionHistory($asset = null, $minRow = 0, $maxRow = 100)
+    {
+        try {
+            $params = [
+                'min_row' => $minRow,
+                'max_row' => $maxRow
+            ];
+            
+            if ($asset) {
+                $params['asset'] = $asset;
+            }
+            
+            return $this->request('GET', '/accounts/transactions', $params);
+        } catch (\Exception $e) {
+            error_log('Transaction History Error: ' . $e->getMessage());
+            throw new \Exception('Failed to retrieve transaction history');
+        }
+    }
+
+    public function getPendingTransactions($asset = null)
+    {
+        try {
+            $params = [];
+            if ($asset) {
+                $params['asset'] = $asset;
+            }
+            
+            return $this->request('GET', '/accounts/pending', $params);
+        } catch (\Exception $e) {
+            error_log('Pending Transactions Error: ' . $e->getMessage());
+            throw new \Exception('Failed to retrieve pending transactions');
+        }
+    }
+
+    public function createMarketOrder($pair, $type, $volume, $price = null)
+    {
+        try {
+            if ($this->isProduction) {
+                // Additional validation for production
+                if ($volume <= 0) {
+                    throw new \Exception('Invalid volume amount');
+                }
+                
+                // Check if user has sufficient balance
+                $balance = $this->getAssetBalance($type === 'BUY' ? explode('_', $pair)[1] : explode('_', $pair)[0]);
+                if (!$balance || $balance['available'] < $volume) {
+                    throw new \Exception('Insufficient balance');
+                }
+            }
+
+            $params = [
+                'pair' => $pair,
+                'type' => strtoupper($type),
+                'volume' => $volume
+            ];
+            
+            if ($price !== null) {
+                $params['price'] = $price;
+            }
+            
+            return $this->request('POST', '/marketorder', $params);
+        } catch (\Exception $e) {
+            error_log('Market Order Error: ' . $e->getMessage());
+            throw new \Exception('Failed to create market order: ' . $e->getMessage());
+        }
+    }
+
+    public function createLimitOrder($pair, $type, $volume, $price)
+    {
+        try {
+            if ($this->isProduction) {
+                // Additional validation for production
+                if ($volume <= 0 || $price <= 0) {
+                    throw new \Exception('Invalid volume or price amount');
+                }
+                
+                // Check if user has sufficient balance
+                $balance = $this->getAssetBalance($type === 'BUY' ? explode('_', $pair)[1] : explode('_', $pair)[0]);
+                if (!$balance || $balance['available'] < $volume) {
+                    throw new \Exception('Insufficient balance');
+                }
+            }
+
+            $params = [
+                'pair' => $pair,
+                'type' => strtoupper($type),
+                'volume' => $volume,
+                'price' => $price
+            ];
+            
+            return $this->request('POST', '/postorder', $params);
+        } catch (\Exception $e) {
+            error_log('Limit Order Error: ' . $e->getMessage());
+            throw new \Exception('Failed to create limit order: ' . $e->getMessage());
+        }
+    }
+
+    public function getOrderDetails($orderId)
+    {
+        try {
+            return $this->request('GET', '/orders/' . $orderId);
+        } catch (\Exception $e) {
+            error_log('Order Details Error: ' . $e->getMessage());
+            throw new \Exception('Failed to retrieve order details');
+        }
+    }
+
+    public function getOrderStatus($orderId)
+    {
+        try {
+            $order = $this->getOrderDetails($orderId);
+            return [
+                'order_id' => $orderId,
+                'status' => $order['status'],
+                'filled_volume' => $order['filled_volume'] ?? 0,
+                'remaining_volume' => $order['remaining_volume'] ?? 0,
+                'average_price' => $order['average_price'] ?? 0,
+                'creation_timestamp' => $order['creation_timestamp'],
+                'expiration_timestamp' => $order['expiration_timestamp'] ?? null
+            ];
+        } catch (\Exception $e) {
+            error_log('Order Status Error: ' . $e->getMessage());
+            throw new \Exception('Failed to retrieve order status');
+        }
     }
 
     public function getOrderBookDepth($pair, $depth = 100)

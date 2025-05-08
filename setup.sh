@@ -16,7 +16,7 @@ mkdir -p src/css
 # Build CSS
 echo "Building CSS..."
 npm run build
-
+echo ""
 echo "Setup completed successfully!" 
 
 LUNO_KEY=your_api_key

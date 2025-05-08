@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- User Profiles Table
 CREATE TABLE IF NOT EXISTS user_profiles (
     id INT AUTO_INCREMENT PRIMARY KEY,

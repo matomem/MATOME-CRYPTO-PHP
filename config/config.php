@@ -7,7 +7,7 @@ define('DB_PASS', '');
 
 // Application Configuration
 define('APP_NAME', 'MatomeCrypto');
-define('APP_URL', 'http://localhost/matomecrypto');
+define('APP_URL', 'http://localhost/matomecrypto'); 
 define('APP_ROOT', dirname(__DIR__));
 
 // Session Configuration
@@ -23,7 +23,7 @@ define('LOCKOUT_TIME', 900); // 15 minutes
 // Luno API Configuration
 define('LUNO_API_KEY', '');
 define('LUNO_API_SECRET', '');
-define('LUNO_API_URL', 'https://api.mybitx.com/api/1');
+define('LUNO_API_URL', 'https://api.Luno.com/api/1');
 
 // Email Configuration
 define('SMTP_HOST', 'smtp.gmail.com');
@@ -35,7 +35,7 @@ define('SMTP_FROM_NAME', APP_NAME);
 
 // File Upload Configuration
 define('UPLOAD_DIR', APP_ROOT . '/public/uploads');
-define('MAX_FILE_SIZE', 5242880); // 5MB
+define('MAX_FILE_SIZE', 5242880); // 10 G
 define('ALLOWED_FILE_TYPES', ['jpg', 'jpeg', 'png', 'pdf']);
 
 // Cache Configuration

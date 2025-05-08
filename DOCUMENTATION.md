@@ -52,7 +52,8 @@ MatomeCrypto is a secure PHP cryptocurrency dashboard and trading web applicatio
 ├── public/              # Public assets
 ├── storage/             # Storage for logs and cache
 └── tests/               # Test files
-```
+
+```**************************
 
 ## Installation
 
@@ -66,7 +67,7 @@ MatomeCrypto is a secure PHP cryptocurrency dashboard and trading web applicatio
 ### Installation Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/matomecrypto.git
+   git clone https://github.com/matomem/matome-Crypto-php
    ```
 
 2. Install dependencies:

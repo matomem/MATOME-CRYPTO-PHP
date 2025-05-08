@@ -14,7 +14,7 @@ class SettingsController {
         $userData = $this->user->findById($this->userId);
         require_once 'app/views/settings/index.php';
     }
-
+// Change password 
     public function updateProfile() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = $_POST['email'] ?? '';
@@ -101,7 +101,7 @@ class SettingsController {
             exit;
         }
     }
-
+//notification 
     public function updateNotifications() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $notificationsEnabled = isset($_POST['notifications_enabled']) ? 1 : 0;

@@ -24,6 +24,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // Basic routing
 switch ($request) {
+    case '/health':
+        require __DIR__ . '/../app/controllers/HealthController.php';
+        $controller = new HealthController();
+        $controller->check();
+        break;
+
     case '/':
     case '/dashboard':
         require __DIR__ . '/../app/controllers/DashboardController.php';
