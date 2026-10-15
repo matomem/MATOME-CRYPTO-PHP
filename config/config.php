@@ -1,4 +1,15 @@
 <?php
+// Load local environment before reading any database or service credentials.
+// Load environment variables if .env file exists
+if (file_exists(APP_ROOT . '/.env')) {
+    $env = parse_ini_file(APP_ROOT . '/.env');
+    foreach ($env as $key => $value) {
+        putenv("$key=$value");
+        $_ENV[$key] = $value;
+    }
+}
+
+// Application Configuration
 // Database Configuration
 // Credentials are supplied by environment variables, not committed source.
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
@@ -53,18 +64,9 @@ ini_set('error_log', APP_ROOT . '/storage/logs/error.log');
 // Timezone
 date_default_timezone_set('UTC');
 
-// Load environment variables if .env file exists
-if (file_exists(APP_ROOT . '/.env')) {
-    $env = parse_ini_file(APP_ROOT . '/.env');
-    foreach ($env as $key => $value) {
-        putenv("$key=$value");
-        $_ENV[$key] = $value;
-    }
-}
-
 // Application Configuration
 define('APP_ENV', getenv('APP_ENV') ?: 'development');
-define('APP_DEBUG', getenv('APP_DEBUG') ?: true);
+define('APP_DEBUG', getenv('APP_DEBUG') === '1' && APP_ENV !== 'production');
 
 // Price Alert Configuration
 define('PRICE_CHECK_INTERVAL', 60); // 1 minute
@@ -74,7 +76,7 @@ define('PRICE_HISTORY_INTERVAL', 300); // 5 minutes
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 ini_set('session.cookie_secure', APP_ENV === 'production' ? 1 : 0);
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 
 // PDO connection
 try {
