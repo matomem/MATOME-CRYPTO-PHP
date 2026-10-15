@@ -1,9 +1,10 @@
 <?php
 // Database Configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'matomecrypto');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// Credentials are supplied by environment variables, not committed source.
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_NAME', getenv('DB_NAME') ?: 'matomecrypto');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
 
 // Application Configuration
 define('APP_NAME', 'MatomeCrypto');
@@ -45,7 +46,7 @@ define('CACHE_LIFETIME', 3600); // 1 hour
 
 // Error Reporting
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', (getenv('APP_ENV') === 'production') ? '0' : '1');
 ini_set('log_errors', 1);
 ini_set('error_log', APP_ROOT . '/storage/logs/error.log');
 
@@ -77,8 +78,10 @@ session_start();
 
 // PDO connection
 try {
-    $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8", $db_user, $db_pass);
+    $pdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die('Database connection failed: ' . $e->getMessage());
+    error_log('Database connection failed: ' . $e->getMessage());
+    http_response_code(503);
+    exit('Database is unavailable.');
 } 
