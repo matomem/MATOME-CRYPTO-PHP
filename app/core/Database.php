@@ -25,9 +25,9 @@ class Database {
     private function connect() {
         try {
             $this->pdo = new PDO(
-                "mysql:host={$_ENV['DB_HOST']};dbname={$_ENV['DB_DATABASE']}",
-                $_ENV['DB_USERNAME'],
-                $_ENV['DB_PASSWORD'],
+                'mysql:host=' . (getenv('DB_HOST') ?: 'localhost') . ';dbname=' . (getenv('DB_DATABASE') ?: getenv('DB_NAME') ?: 'matomecrypto') . ';charset=utf8mb4',
+                (getenv('DB_USERNAME') ?: getenv('DB_USER') ?: 'root'),
+                (getenv('DB_PASSWORD') ?: getenv('DB_PASS') ?: ''),
                 [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -35,7 +35,8 @@ class Database {
                 ]
             );
         } catch (PDOException $e) {
-            throw new \Exception("Connection failed: " . $e->getMessage());
+            error_log("Database connection failed: " . $e->getMessage());
+            throw new \RuntimeException("Database is unavailable.", 0, $e);
         }
     }
 
@@ -45,7 +46,8 @@ class Database {
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            throw new \Exception("Query failed: " . $e->getMessage());
+            error_log("Database query failed: " . $e->getMessage());
+            throw new \RuntimeException("Database query failed.", 0, $e);
         }
     }
 
@@ -140,7 +142,8 @@ class Database {
             $stmt = $this->pdo->prepare($sql);
             return $stmt->execute($params);
         } catch (PDOException $e) {
-            die("Execute failed: " . $e->getMessage());
+            error_log("Database execute failed: " . $e->getMessage());
+            throw new \RuntimeException("Database execute failed.", 0, $e);
         }
     }
 

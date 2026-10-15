@@ -24,12 +24,12 @@ class LunoService
         }
         
         $this->client = new Client([
-            'base_uri' => $this->baseUrl,
+            'base_uri' => rtrim($this->baseUrl, '/') . '/',
             'timeout' => 30,
             'headers' => [
                 'User-Agent' => 'MatomeCrypto/1.0'
             ],
-            'verify' => $this->isProduction // Enable SSL verification in production
+            'verify' => true // Always validate TLS certificates
         ]);
     }
 
@@ -283,19 +283,15 @@ class LunoService
     private function request($method, $endpoint, $params = [])
     {
         try {
-            $timestamp = time() * 1000;
-            $params['timestamp'] = $timestamp;
-
-            $query = http_build_query($params);
-            $signature = hash_hmac('sha256', $query, $this->apiSecret);
-
-            $response = $this->client->request($method, $endpoint, [
-                'headers' => [
-                    'Authorization' => 'Basic ' . base64_encode($this->apiKey . ':' . $signature)
-                ],
-                'query' => $params
-            ]);
-
+            $options = [
+                'auth' => [$this->apiKey, $this->apiSecret],
+            ];
+            if (in_array(strtoupper($method), ['POST', 'PUT', 'PATCH'], true)) {
+                $options['form_params'] = $params;
+            } else {
+                $options['query'] = $params;
+            }
+            $response = $this->client->request($method, ltrim($endpoint, '/'), $options);
             $result = json_decode($response->getBody(), true);
             
             if (isset($result['error'])) {
